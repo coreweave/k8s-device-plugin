@@ -19,6 +19,7 @@ package rm
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/NVIDIA/go-nvlib/pkg/nvlib/device"
@@ -93,15 +94,22 @@ func (r *resourceManager) ValidateRequest(ids AnnotatedIDs) error {
 	return nil
 }
 
+var resourceNameSuffix = os.Getenv("RESOURCE_SUFFIX")
+
 // AddDefaultResourcesToConfig adds default resource matching rules to config.Resources
 func AddDefaultResourcesToConfig(infolib info.Interface, nvmllib nvml.Interface, devicelib device.Interface, config *spec.Config) error {
-	_ = config.Resources.AddGPUResource("*", "gpu")
+	if resourceNameSuffix == "" {
+		resourceNameSuffix = "gpu"
+	}
+	_ = config.Resources.AddGPUResource("*", resourceNameSuffix)
+
 	if config.Flags.MigStrategy == nil {
 		return nil
 	}
+
 	switch *config.Flags.MigStrategy {
 	case spec.MigStrategySingle:
-		return config.Resources.AddMIGResource("*", "gpu")
+		return config.Resources.AddMIGResource("*", resourceNameSuffix)
 	case spec.MigStrategyMixed:
 		hasNVML, reason := infolib.HasNvml()
 		if !hasNVML {
