@@ -10,23 +10,20 @@ stages:
   - build
 
 variables:
-  KANIKO_IMAGE: gcr.io/kaniko-project/executor:v1.9.1-debug
-  # cache
-  CACHE_REGISTRY_HOST: "kaniko-cache-docker-registry.kaniko.svc"
-  CACHE_REGISTRY_PORT: "5000"
-  CACHE_REGISTRY_REPO: "${CACHE_REGISTRY_HOST}:${CACHE_REGISTRY_PORT}/${CI_PROJECT_NAME}/${CI_JOB_NAME}/cache"
-  CACHE_PROXY: "http://193.25.126.17:3128"
-  KANIKO_ADDTL_ARGS: "--cache=true --cache-run-layers=true --cache-repo=${CACHE_REGISTRY_REPO} --skip-tls-verify --skip-unused-stages=true --insecure"
+  KANIKO_IMAGE: gcr.io/kaniko-project/executor:debug
 
 build:
   stage: build
   rules:
     - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == null'
   before_script:
-    - export HTTP_PROXY=${CACHE_PROXY}
-    - export NO_PROXY=${CACHE_REGISTRY_HOST}
+    - export HTTP_PROXY=${REGPROXY_URI}
+    - export HTTPS_PROXY=${REGPROXY_URI}
+    - mkdir -p /etc/ssl/certs/ && cat /etc/gitlab-runner/certs/proxy-ca.crt >> /etc/ssl/certs/ca-certificates.crt
     - mkdir -p /kaniko/.docker
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - >-
+      echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"},
+        \"docker.io\":{\"auth\":\"$(printf "%s:%s" "${DOCKERHUB_USERNAME}" "${DOCKERHUB_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
   script:
     - /kaniko/executor $KANIKO_ADDTL_ARGS
       --context "${CI_PROJECT_DIR}"
