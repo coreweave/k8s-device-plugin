@@ -20,7 +20,7 @@ RUN yum install -y \
      && \
     rm -rf /var/cache/yum/*
 
-ARG GOLANG_VERSION=x.x.x
+ARG GOLANG_VERSION=1.22.6
 RUN set -eux; \
     \
     arch="$(uname -m)"; \
