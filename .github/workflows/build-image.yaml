@@ -1,0 +1,76 @@
+---
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: "Build & Push Image"
+run-name: Build Image - ${{ github.ref_name }}
+
+on: push
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-push-image:
+    name: Build & Push Image
+    runs-on: cw
+    container: ghcr.io/coreweave/github-actions-images/github-base-runner:github-base-runner-v1
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Set Build Vars
+        id: metadata
+        run: |
+          RELEASE_VERSION=$(grep '^VERSION' versions.mk | awk '{print $(NF)}')
+          SHORT_SHA=$(git rev-parse --short ${{ github.sha }})
+          TAG_PREFIX="ghcr.io/${{ github.repository }}"
+          if [ ${{ github.ref_name }} != 'coreweave' ]; then
+            TAG="${TAG_PREFIX}/dev:${RELEASE_VERSION}-${SHORT_SHA}"
+          else
+            TAG="${TAG_PREFIX}/coreweave:${RELEASE_VERSION}-${SHORT_SHA}"
+          fi
+          echo "Image will be published with tag ${TAG}"
+          echo "image-tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Initialize Registry Credentials File
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_PASS: ${{ github.token }}
+        run: |
+          mkdir -p ~/.docker
+          jq -n '.auths."ghcr.io" = { username: env.GHCR_USER, password: env.GHCR_PASS }' | install -m400 /dev/stdin ~/.docker/config.json
+
+      - name: Fetch Remote BuildKit Client Certs
+        uses: dopplerhq/secrets-fetch-action@v1.2.0
+        id: client-certs
+        with:
+          doppler-token: ${{ secrets.ORG_BUILDKIT_CLIENT_TOKEN }}
+          doppler-project: ${{ secrets.BUILDKIT_CONSUMER_DOPPLER_PROJECT }}
+          doppler-config: ${{ secrets.BUILDKIT_CONSUMER_DOPPLER_CONFIG }}
+          inject-env-vars: false
+
+      - name: Setup Remote BuildKit Builder
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: remote
+          endpoint: ${{ secrets.BUILDKIT_AMD64_ENDPOINT }}
+          append: |
+            - endpoint: ${{ secrets.BUILDKIT_ARM64_ENDPOINT }}
+        env:
+          BUILDER_NODE_0_AUTH_TLS_CACERT: ${{ steps.client-certs.outputs.TLS_CACERT }}
+          BUILDER_NODE_0_AUTH_TLS_CERT: ${{ steps.client-certs.outputs.TLS_CERT }}
+          BUILDER_NODE_0_AUTH_TLS_KEY: ${{ steps.client-certs.outputs.TLS_KEY }}
+          BUILDER_NODE_1_AUTH_TLS_CACERT: ${{ steps.client-certs.outputs.TLS_CACERT }}
+          BUILDER_NODE_1_AUTH_TLS_CERT: ${{ steps.client-certs.outputs.TLS_CERT }}
+          BUILDER_NODE_1_AUTH_TLS_KEY: ${{ steps.client-certs.outputs.TLS_KEY }}
+
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ steps.metadata.outputs.image-tag }}
+          platforms: linux/amd64, linux/arm64
+          file: deployments/container/Dockerfile
