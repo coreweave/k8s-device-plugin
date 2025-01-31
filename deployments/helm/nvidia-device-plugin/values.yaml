@@ -28,6 +28,8 @@ config:
   fallbackStrategies: ["named" , "single"]
 
 compatWithCPUManager: null
+resourcePrefix: null
+resourceSuffix: null
 migStrategy: null
 failOnInitError: null
 deviceListStrategy: null
@@ -46,7 +48,7 @@ allowDefaultNamespace: false
 
 imagePullSecrets: []
 image:
-  repository: nvcr.io/nvidia/k8s-device-plugin
+  repository: ghcr.io/coreweave/k8s-device-plugin/coreweave
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
