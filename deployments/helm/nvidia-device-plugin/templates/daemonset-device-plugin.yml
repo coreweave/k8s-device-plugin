@@ -135,6 +135,14 @@ spec:
         name: nvidia-device-plugin-ctr
         command: ["nvidia-device-plugin"]
         env:
+        {{- if typeIs "string" .Values.resourcePrefix }}
+          - name: RESOURCE_PREFIX
+            value: {{ .Values.resourcePrefix }}
+        {{- end }}
+        {{- if typeIs "string" .Values.resourceSuffix }}
+          - name: RESOURCE_SUFFIX
+            value: {{ .Values.resourceSuffix }}
+        {{- end }}
           - name: MPS_ROOT
             value: {{ .Values.mps.root }}
         {{- if typeIs "string" .Values.migStrategy }}

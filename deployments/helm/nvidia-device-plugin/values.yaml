@@ -28,6 +28,8 @@ config:
   fallbackStrategies: ["named" , "single"]
 
 compatWithCPUManager: null
+resourcePrefix: null
+resourceSuffix: null
 migStrategy: null
 failOnInitError: null
 deviceListStrategy: null
