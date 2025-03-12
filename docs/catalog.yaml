@@ -1,0 +1,19 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: k8s-device-plugin
+  description: |
+    Fork of k8s-device-plugin maintained for sunk
+  tags:
+    - compute
+  links:
+    - title: Repo
+      url: https://github.com/coreweave/k8s-device-plugin
+      icon: github
+  annotations:
+    grafana/dashboard-selector: 'tags @> "syseng-havock"'
+spec:
+  type: service
+  lifecycle: production
+  owner: group:cw/team_hardwarecompute_havock
+  system: Hardware Compute
