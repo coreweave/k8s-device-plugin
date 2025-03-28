@@ -148,7 +148,7 @@ spec:
         {{- if typeIs "string" .Values.imexChannelIds }}
           - name: IMEX_CHANNEL_IDS
             value: {{ .Values.imexChannelIds | quote }}
-          {{- end }}
+        {{- end }}
         {{- if typeIs "bool" .Values.imexRequired }}
           - name: IMEX_REQUIRED
             value: {{ .Values.imexRequired | quote }}
