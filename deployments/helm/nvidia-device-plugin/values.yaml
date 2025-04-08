@@ -37,6 +37,11 @@ gdrcopyEnabled: null
 gdsEnabled: null
 mofedEnabled: null
 deviceDiscoveryStrategy: null
+resourcePrefix: null
+resourceSuffix: null
+dpDisableHealthchecks: null
+imexChannelIds: null
+imexRequired: null
 
 nameOverride: ""
 fullnameOverride: ""
