@@ -1,0 +1,48 @@
+name: Push Chart to OCI
+
+on:
+  push:
+    branches:
+      - coreweave
+
+jobs:
+  push-helm-chart:
+    name: Package & Push Helm Chart
+    runs-on: cw
+    container: ghcr.io/coreweave/github-actions-images/github-helm-runner:v1.4.0
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set chart version
+        id: set_version
+        run: |
+          VERSION=$(grep '^VERSION' versions.mk | awk '{print $(NF)}')
+          SHORT_SHA=$(git rev-parse --short=8 ${{ github.sha }})
+          VERSION="${VERSION}-${SHORT_SHA}"
+          VERSION=${VERSION#v}
+
+          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package and push helm chart
+        run: |
+          VERSION=${{ steps.set_version.outputs.VERSION }}
+
+          helm package ./deployments/helm/nvidia-device-plugin --version "$VERSION"
+
+          REPOSITORY=ghcr.io/$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]')
+          CHART_NAME=$(yq -r .name ./deployments/helm/nvidia-device-plugin/Chart.yaml)
+          PACKAGE_FILE="${CHART_NAME}-${VERSION}.tgz"
+
+          helm push "$PACKAGE_FILE" oci://${REPOSITORY}/charts
