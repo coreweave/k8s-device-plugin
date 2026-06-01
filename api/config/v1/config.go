@@ -68,12 +68,11 @@ func NewConfig(c *cli.Context, flags []cli.Flag) (*Config, error) {
 		config.Flags.NvidiaDevRoot = config.Flags.NvidiaDriverRoot
 	}
 
-	// We explicitly set sharing.mps.failRequestsGreaterThanOne = true
-	// This can be relaxed in certain cases -- such as a single GPU -- but
-	// requires additional logic around when it's OK to combine requests and
-	// makes the semantics of a request unclear.
-	if config.Sharing.MPS != nil {
-		config.Sharing.MPS.FailRequestsGreaterThanOne = true
+	// Default sharing.mps.failRequestsGreaterThanOne to true if not explicitly set in config.
+	// Set it to false in the device plugin config to allow pods to request more than one MPS-shared GPU unit.
+	if config.Sharing.MPS != nil && config.Sharing.MPS.FailRequestsGreaterThanOne == nil {
+		t := true
+		config.Sharing.MPS.FailRequestsGreaterThanOne = &t
 	}
 
 	return config, nil

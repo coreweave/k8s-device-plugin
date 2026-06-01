@@ -249,14 +249,15 @@ func (d *Daemon) setComputeMode(mode computeMode) error {
 	return nil
 }
 
-// perDevicePinnedMemoryLimits returns the pinned memory limits for each device.
+// perDevicePinnedDeviceMemoryLimits returns the pinned memory limits for each
+// device as the full physical memory. Per-client throttling for shared
+// (non-full-node) requests is applied by the device plugin via the
+// CUDA_MPS_PINNED_DEVICE_MEM_LIMIT env var in the Allocate response; the MPS
+// server default must be at least that high or the env var is clamped down.
 func (m *Daemon) perDevicePinnedDeviceMemoryLimits() map[string]string {
 	totalMemoryInBytesPerDevice := make(map[string]uint64)
-	replicasPerDevice := make(map[string]uint64)
 	for _, device := range m.Devices() {
-		index := device.Index
-		totalMemoryInBytesPerDevice[index] = device.TotalMemory
-		replicasPerDevice[index] += 1
+		totalMemoryInBytesPerDevice[device.Index] = device.TotalMemory
 	}
 
 	limits := make(map[string]string)
@@ -264,17 +265,18 @@ func (m *Daemon) perDevicePinnedDeviceMemoryLimits() map[string]string {
 		if totalMemory == 0 {
 			continue
 		}
-		replicas := replicasPerDevice[index]
-		limits[index] = fmt.Sprintf("%vM", totalMemory/replicas/1024/1024)
+		limits[index] = fmt.Sprintf("%vM", totalMemory/1024/1024)
 	}
 	return limits
 }
 
+// activeThreadPercentage returns the server-side default active thread
+// percentage. Set to 100 so it does not cap per-client env-var overrides;
+// per-client throttling is applied via CUDA_MPS_ACTIVE_THREAD_PERCENTAGE in
+// the Allocate response.
 func (m *Daemon) activeThreadPercentage() string {
 	if len(m.Devices()) == 0 {
 		return ""
 	}
-	replicasPerDevice := len(m.Devices()) / len(m.Devices().GetUUIDs())
-
-	return fmt.Sprintf("%d", 100/replicasPerDevice)
+	return "100"
 }
