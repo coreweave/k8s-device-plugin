@@ -330,7 +330,7 @@ func (plugin *nvidiaDevicePlugin) getAllocateResponse(requestIds []string) (*plu
 		}
 	}
 	if plugin.mps.enabled {
-		plugin.updateResponseForMPS(response)
+		plugin.updateResponseForMPS(response, len(requestIds))
 	}
 
 	// The following modifications are only made if at least one non-CDI device
@@ -361,8 +361,10 @@ func (plugin *nvidiaDevicePlugin) getAllocateResponse(requestIds []string) (*plu
 // updateResponseForMPS ensures that the ContainerAllocate response contains the information required to use MPS.
 // This includes per-resource pipe and log directories as well as a global daemon-specific shm
 // and assumes that an MPS control daemon has already been started.
-func (plugin nvidiaDevicePlugin) updateResponseForMPS(response *pluginapi.ContainerAllocateResponse) {
-	plugin.mps.updateReponse(response)
+// grantedCount is the number of replica IDs kubelet allocated to this container and
+// is used to decide whether to inject per-client limit env vars.
+func (plugin nvidiaDevicePlugin) updateResponseForMPS(response *pluginapi.ContainerAllocateResponse, grantedCount int) {
+	plugin.mps.updateReponse(response, grantedCount)
 }
 
 // updateResponseForCDI updates the specified response for the given device IDs.
