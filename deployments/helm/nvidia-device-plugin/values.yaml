@@ -42,6 +42,13 @@ dpDisableHealthchecks: null
 imexChannelIds: null
 imexRequired: null
 
+# CoreWeave: when true, inject /dev/fuse (with the device-cgroup rw rule) into every
+# allocation, so rootless apptainer/squashfuse works in NON-privileged GPU pods (e.g.
+# SUNK slurmd) without a privileged securityContext or a separate fuse device plugin.
+# Sets CW_INJECT_FUSE_DEVICE=true on the device-plugin container. Requires a non-CDI
+# device-list strategy (PassDeviceSpecs / volume-mounts); CDI strategies not yet covered.
+injectFuseDevice: false
+
 nameOverride: ""
 fullnameOverride: ""
 namespaceOverride: ""
