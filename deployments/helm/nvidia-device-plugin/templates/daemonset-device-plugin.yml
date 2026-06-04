@@ -169,6 +169,10 @@ spec:
           - name: PASS_DEVICE_SPECS
             value: {{ .Values.compatWithCPUManager | quote }}
         {{- end }}
+        {{- if .Values.injectFuseDevice }}
+          - name: CW_INJECT_FUSE_DEVICE
+            value: "true"
+        {{- end }}
         {{- if typeIs "string" .Values.deviceListStrategy }}
           - name: DEVICE_LIST_STRATEGY
             value: {{ .Values.deviceListStrategy }}

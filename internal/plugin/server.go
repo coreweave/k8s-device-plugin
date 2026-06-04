@@ -541,5 +541,21 @@ func (plugin *nvidiaDevicePlugin) apiDeviceSpecs(devRoot string, ids []string) [
 		specs = append(specs, spec)
 	}
 
+	// CoreWeave: optionally inject /dev/fuse into every allocation so rootless
+	// apptainer/squashfuse works in NON-privileged GPU pods (e.g. SUNK slurmd). This
+	// adds the device-cgroup rw rule that a plain hostPath mount cannot provide on
+	// cgroup-v2 + containerd 2.x. Opt-in via CW_INJECT_FUSE_DEVICE=true; default
+	// behavior is unchanged. /dev/fuse lives at the host /dev root, not under devRoot.
+	// NOTE: this path runs only when PassDeviceSpecs is enabled (non-CDI device-list
+	// strategy). CDI strategies allocate via updateResponseForCDI() and are not yet
+	// covered — see the chart docs / follow-up for CDI support.
+	if os.Getenv("CW_INJECT_FUSE_DEVICE") == "true" {
+		specs = append(specs, &pluginapi.DeviceSpec{
+			ContainerPath: "/dev/fuse",
+			HostPath:      "/dev/fuse",
+			Permissions:   "rw",
+		})
+	}
+
 	return specs
 }
