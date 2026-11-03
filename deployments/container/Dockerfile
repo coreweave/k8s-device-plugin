@@ -30,7 +30,7 @@ RUN set -eux; \
         aarch64) ARCH='arm64' ;; \
         *) echo "unsupported architecture" ; exit 1 ;; \
     esac; \
-    wget -nv -O - https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz \
+    wget -nv -O - https://go.dev/dl/go${GOLANG_VERSION}.linux-${ARCH}.tar.gz \
     | tar -C /usr/local -xz
 
 ENV GOPATH /go
@@ -52,6 +52,9 @@ RUN rpm -qa | sort -u > /tmp/package-list.minimal
 
 # We define the following image as a base image and remove unneeded packages.
 FROM nvcr.io/nvidia/cuda:12.6.3-base-ubi9 AS base
+
+RUN yum install -y 'ca-certificates >= 2026.2.92_v9.0.319-90.3.el9_8' && \
+    yum clean all
 
 WORKDIR /cleanup
 
